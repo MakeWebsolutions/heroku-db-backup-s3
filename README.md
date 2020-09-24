@@ -25,14 +25,6 @@ Create scheduler.
 ```
 heroku addons:open scheduler --app <your_app>
 ```
-Now in browser `Add new Job`.
-Paste next line:
-`bash /app/vendor/backup.sh -db <somedbname>`
-and configure FREQUENCY. Paramenter `db` is used for naming convention when we create backups. We don't use it for dumping  database with the same name.
 
-### Doesn't work?
-In case if scheduler doesn't run your task, check logs using this e.g.:
-```
-heroku logs -t  --app <your_app> | grep 'backup.sh'
-heroku logs --ps scheduler.x --app <you_app>
-```
+Script:
+bash /app/vendor/backup.sh -db <somedbname>

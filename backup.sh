@@ -50,15 +50,22 @@ if [[ -z "$DATABASE_URL" ]]; then
   echo "Missing DATABASE_URL variable"
   exit 1
 fi
+if [[ -z "$BACKUP_S3_PASSWORD" ]]; then
+  echo "Missing BACKUP_S3_PASSWORD variable"
+  exit 1
+fi
 
 printf "${Green}Start dump${EC}"
 
-#time pg_dump -F c --no-acl --no-owner --quote-all-identifiers $DATABASE_URL | gzip >  /tmp/"${DBNAME}_${FILENAME}".gz
-time pg_dump -F c --no-acl --no-owner --quote-all-identifiers $DATABASE_URL >  /tmp/"${DBNAME}_${FILENAME}".dump
+time pg_dump -F c --no-acl --no-owner --quote-all-identifiers $DATABASE_URL | gzip >  /tmp/"${DBNAME}_${FILENAME}".gz
+
+gpg --yes --batch --passphrase=$BACKUP_S3_PASSWORD -c /tmp/"${DBNAME}_${FILENAME}".gz
+
+rm -rf /tmp/"${DBNAME}_${FILENAME}".gz
 
 EXPIRATION_DATE=$(date -d "$EXPIRATION days" +"%Y-%m-%dT%H:%M:%SZ")
 
 printf "${Green}Move dump to AWS${EC}"
-time /app/vendor/awscli/bin/aws s3 cp /tmp/"${DBNAME}_${FILENAME}".dump s3://$BACKUP_S3_BUCKET/$DBNAME/"${DBNAME}_${FILENAME}".dump --expires $EXPIRATION_DATE
+time /app/vendor/awscli/bin/aws s3 cp /tmp/"${DBNAME}_${FILENAME}".gz s3://$BACKUP_S3_BUCKET/$DBNAME/"${DBNAME}_${FILENAME}".gz.gpg --expires $EXPIRATION_DATE
 
-rm -rf /tmp/"${DBNAME}_${FILENAME}".dump
+rm -rf /tmp/"${DBNAME}_${FILENAME}".gz.gpg
